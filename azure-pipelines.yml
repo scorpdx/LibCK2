@@ -11,3 +11,4 @@ steps:
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
+    - task: PublishBuildArtifacts@1
