@@ -7,7 +7,7 @@
     <Authors>jzebedee</Authors>
     <Description>LibCK2 is a .NET Standard library for manipulating Crusader Kings 2 game data and save games</Description>
     <Copyright></Copyright>
-    <PackageLicenseUrl></PackageLicenseUrl>
+    <PackageLicenseUrl>https://github.com/scorpdx/LibCK2/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/scorpdx/LibCK2</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
