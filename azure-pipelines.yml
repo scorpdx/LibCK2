@@ -14,10 +14,12 @@ steps:
 - task: PublishBuildArtifacts@1
   inputs:
     pathtoPublish: $(Build.ArtifactStagingDirectory)
-- task: NuGetCommand@2
+- task: DotNetCoreCLI@2
   inputs:
-    command: push
-    nuGetFeedType: external
+    command: 'push'
+    nuGetFeedType: 'external' # Required when command == push. Options: internal, external
+    packagesToPush: '$(build.artifactStagingDirectory)/*.nupkg' # Required when command == push
     publishFeedCredentials: 'nuget.org scorpdx'
-    versioningScheme: byEnvVar
-    versionEnvVar: $(PackageVersion)
+    #nuget.org scorpdx
+    #publishVstsFeed: # Required when command == push && NuGetFeedType == internal
+    #publishFeedCredentials: # Required when command == push && NuGetFeedType == external
