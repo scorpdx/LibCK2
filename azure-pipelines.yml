@@ -18,6 +18,6 @@ steps:
   inputs:
     command: push
     nuGetFeedType: external
-    publishFeedCredentials: 'scorpdx nuget.org'
+    publishFeedCredentials: 'nuget.org scorpdx'
     versioningScheme: byEnvVar
     versionEnvVar: $(PackageVersion)
