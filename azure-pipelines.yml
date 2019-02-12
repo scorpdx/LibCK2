@@ -11,4 +11,13 @@ steps:
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
-    - task: PublishBuildArtifacts@1
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: $(Build.ArtifactStagingDirectory)
+- task: NuGetCommand@2
+  inputs:
+    command: push
+    nuGetFeedType: external
+    publishFeedCredentials: 'scorpdx nuget.org'
+    versioningScheme: byEnvVar
+    versionEnvVar: $(PackageVersion)
