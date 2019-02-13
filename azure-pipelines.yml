@@ -10,18 +10,11 @@ variables:
 steps:
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
+    dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 - task: PublishBuildArtifacts@1
   inputs:
     pathtoPublish: $(Build.ArtifactStagingDirectory)
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'pack'
-    configuration: 'release'
-    packagesToPack: '**/*.csproj' # Required when command == pack
-    packDirectory: '$(build.artifactStagingDirectory)' # Optional
-    nobuild: true # Optional
-    #versioningScheme: 'off' # Options: off, byPrereleaseNumber, byEnvVar, byBuildNumber
 - task: DotNetCoreCLI@2
   inputs:
     command: 'push'
