@@ -16,9 +16,17 @@ steps:
     pathtoPublish: $(Build.ArtifactStagingDirectory)
 - task: DotNetCoreCLI@2
   inputs:
+    command: 'pack'
+    configuration: 'release'
+    packagesToPack: '**/*.csproj' # Required when command == pack
+    packDirectory: '$(build.artifactStagingDirectory)' # Optional
+    nobuild: true # Optional
+    #versioningScheme: 'off' # Options: off, byPrereleaseNumber, byEnvVar, byBuildNumber
+- task: DotNetCoreCLI@2
+  inputs:
     command: 'push'
     nuGetFeedType: 'external' # Required when command == push. Options: internal, external
-    packagesToPush: '*.nupkg' # Required when command == push
+    packagesToPush: '$(build.artifactStagingDirectory)/*.nupkg' # Required when command == push
     publishFeedCredentials: 'nuget.org scorpdx'
     #nuget.org scorpdx
     #publishVstsFeed: # Required when command == push && NuGetFeedType == internal
