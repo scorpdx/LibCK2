@@ -9,12 +9,17 @@ variables:
 
 steps:
 - script: |
-    dotnet build   src/LibCK2 --configuration $(buildConfiguration)
-    dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
+    dotnet build   src/LibCK2 --configuration $(buildConfiguration)            --output $BUILD_BINARIESDIRECTORY
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
+#   dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 - task: PublishBuildArtifacts@1
   inputs:
-    pathtoPublish: $(Build.ArtifactStagingDirectory)
+    pathtoPublish: $BUILD_ARTIFACTSTAGINGDIRECTORY
+    ArtifactName: 'pub'
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: $BUILD_BINARIESDIRECTORY
+    ArtifactName: 'bin'
 #- task: DotNetCoreCLI@2
 #  inputs:
 #    command: 'push'
