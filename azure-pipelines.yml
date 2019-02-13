@@ -10,7 +10,7 @@ variables:
 steps:
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
-    dotnet publish src/LibCK2 --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
+    dotnet publish src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 - task: PublishBuildArtifacts@1
   inputs:
     pathtoPublish: $(Build.ArtifactStagingDirectory)
@@ -18,7 +18,7 @@ steps:
   inputs:
     command: 'push'
     nuGetFeedType: 'external' # Required when command == push. Options: internal, external
-    packagesToPush: '$(build.artifactStagingDirectory)/*.nupkg' # Required when command == push
+    packagesToPush: '*.nupkg' # Required when command == push
     publishFeedCredentials: 'nuget.org scorpdx'
     #nuget.org scorpdx
     #publishVstsFeed: # Required when command == push && NuGetFeedType == internal
