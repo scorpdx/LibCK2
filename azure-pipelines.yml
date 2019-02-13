@@ -14,11 +14,11 @@ steps:
 #   dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 - task: PublishBuildArtifacts@1
   inputs:
-    pathtoPublish: $BUILD_ARTIFACTSTAGINGDIRECTORY
+    pathtoPublish: $(Build.ArtifactStagingDirectory)
     ArtifactName: 'pub'
 - task: PublishBuildArtifacts@1
   inputs:
-    pathtoPublish: $BUILD_BINARIESDIRECTORY
+    pathtoPublish: $(Build.BinariesDirectory)
     ArtifactName: 'bin'
 #- task: DotNetCoreCLI@2
 #  inputs:
