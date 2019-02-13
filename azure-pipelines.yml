@@ -30,3 +30,4 @@ steps:
     nuGetFeedType: external
     publishFeedCredentials: 'nuget.org scorpdx'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    allowPackageConflicts: true
