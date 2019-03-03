@@ -63,10 +63,12 @@ namespace LibCK2
         public static async Task<SaveGame> ParseAsync(Stream stream)
         {
             var parsedTokens = CK2Parsing.ParseTokensAsync(stream);
-            using (var ms = new MemoryStream(0x2000)) //default buffer size - 8KiB
+            using (var ms = new MemoryStream(0x1000)) //default buffer size - 4KiB
             {
-                var writer = new StreamBufferWriter(ms);
-                CK2Parsing.TokensToJson(await parsedTokens, writer);
+                using (var writer = new StreamBufferWriter(ms))
+                {
+                    CK2Parsing.TokensToJson(await parsedTokens, writer);
+                }
 
                 ms.Seek(0, SeekOrigin.Begin);
                 return new SaveGame(await JsonDocument.ParseAsync(ms));
