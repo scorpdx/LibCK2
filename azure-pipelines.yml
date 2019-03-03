@@ -1,6 +1,3 @@
-# Build ASP.NET Core project using Azure Pipelines
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core?view=vsts
-
 pool:
   vmImage: 'Ubuntu 16.04'
   
@@ -8,6 +5,10 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- task: DotNetCoreInstaller@0
+  displayName: 'Install .NET Core SDK 3.0.100-preview-010184'
+  inputs:
+    version: 3.0.100-preview-010184
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
