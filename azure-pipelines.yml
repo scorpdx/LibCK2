@@ -10,7 +10,7 @@ steps:
   inputs:
     version: 3.0.100-preview-010184
 - script: |
-    dotnet build   src/LibCK2 --configuration $(buildConfiguration)            --output $BUILD_BINARIESDIRECTORY
+    dotnet build   src/LibCK2 --configuration $(buildConfiguration)
     dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY/package --version-suffix 'CI-$(Build.BuildNumber)'
     dotnet publish src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 - task: PublishBuildArtifacts@1
