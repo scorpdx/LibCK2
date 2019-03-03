@@ -128,6 +128,53 @@ namespace LibCK2.Parsing
             var json = new Utf8JsonWriter(writer);
             json.WriteStartObject();
 
+            void WriteArray(ref Utf8JsonWriter in_json, string value)
+            {
+                foreach (var element in value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    switch (ParseTokenType(element))
+                    {
+                        case string s:
+                            in_json.WriteStringValue(s);
+                            break;
+                        case int n:
+                            in_json.WriteNumberValue(n);
+                            break;
+                        case float f:
+                            in_json.WriteNumberValue(f);
+                            break;
+                        case bool b:
+                            in_json.WriteBooleanValue(b);
+                            break;
+                        case DateTime d:
+                            in_json.WriteStringValue($"{d.Year}.{d.Month}.{d.Day}");
+                            break;
+                    }
+                }
+            }
+
+            void WriteObject(ref Utf8JsonWriter in_json, string key, string value)
+            {
+                switch (ParseTokenType(value))
+                {
+                    case string s:
+                        in_json.WriteString(key, s);
+                        break;
+                    case int n:
+                        in_json.WriteNumber(key, n);
+                        break;
+                    case float f:
+                        in_json.WriteNumber(key, f);
+                        break;
+                    case bool b:
+                        in_json.WriteBoolean(key, b);
+                        break;
+                    case DateTime d:
+                        in_json.WriteString(key, $"{d.Year}.{d.Month}.{d.Day}");
+                        break;
+                }
+            }
+
             Stack<bool> subitems = new Stack<bool>();
             for (int i = 0; i < parsedTokens.Count; i++)
             {
@@ -140,24 +187,7 @@ namespace LibCK2.Parsing
                             var next = parsedTokens[i + 1];
                             if (next.stoppedBy == TokenTypes.Value)
                             {
-                                switch (ParseTokenType(next.token))
-                                {
-                                    case string s:
-                                        json.WriteString(key, s);
-                                        break;
-                                    case int n:
-                                        json.WriteNumber(key, n);
-                                        break;
-                                    case float f:
-                                        json.WriteNumber(key, f);
-                                        break;
-                                    case bool b:
-                                        json.WriteBoolean(key, b);
-                                        break;
-                                    case DateTime d:
-                                        json.WriteString(key, $"{d.Year}.{d.Month}.{d.Day}");
-                                        break;
-                                }
+                                WriteObject(ref json, key, next.token);
                                 i++;
                             }
                         }
@@ -166,15 +196,17 @@ namespace LibCK2.Parsing
                         {
                             var prev = parsedTokens[i - 1];
                             var next = parsedTokens[i + 1];
-                            if (next.stoppedBy == TokenTypes.Value)
+                            switch (next.stoppedBy)
                             {
-                                json.WriteStartArray(prev.token);
-                                subitems.Push(false); //array
-                            }
-                            else
-                            {
-                                json.WriteStartObject(prev.token);
-                                subitems.Push(true); //object
+                                case TokenTypes.Value:
+                                case TokenTypes.End:
+                                    json.WriteStartArray(prev.token);
+                                    subitems.Push(false); //array
+                                    break;
+                                default:
+                                    json.WriteStartObject(prev.token);
+                                    subitems.Push(true); //object
+                                    break;
                             }
                         }
                         break;
@@ -187,6 +219,10 @@ namespace LibCK2.Parsing
                             }
                             else
                             {
+                                if (!string.IsNullOrWhiteSpace(token))
+                                {
+                                    WriteArray(ref json, token);
+                                }
                                 json.WriteEndArray();
                             }
                         }
@@ -203,27 +239,7 @@ namespace LibCK2.Parsing
                         }
                         else if (subitems.Peek() == false) //array
                         {
-                            foreach (var element in token.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                            {
-                                switch (ParseTokenType(element))
-                                {
-                                    case string s:
-                                        json.WriteStringValue(s);
-                                        break;
-                                    case int n:
-                                        json.WriteNumberValue(n);
-                                        break;
-                                    case float f:
-                                        json.WriteNumberValue(f);
-                                        break;
-                                    case bool b:
-                                        json.WriteBooleanValue(b);
-                                        break;
-                                    case DateTime d:
-                                        json.WriteStringValue($"{d.Year}.{d.Month}.{d.Day}");
-                                        break;
-                                }
-                            }
+                            WriteArray(ref json, token);
                         }
                         else
                         {
