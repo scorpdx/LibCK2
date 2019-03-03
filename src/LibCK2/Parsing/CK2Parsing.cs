@@ -78,48 +78,54 @@ namespace LibCK2.Parsing
             return tokens;
         }
 
+        private static readonly Regex r_tString = new Regex(@"""(.*?)""", RegexOptions.Compiled);
+        private static readonly Regex r_tDate = new Regex(@"(\d+)\.(\d+)\.(\d+)", RegexOptions.Compiled);
+        private static readonly Regex r_tDouble = new Regex(@"(-?\d+\.\d+)", RegexOptions.Compiled);
+        private static readonly Regex r_tBool = new Regex(@"\b(yes|no)\b", RegexOptions.Compiled);
+        private static readonly Regex r_tInt = new Regex(@"(-?\d+)", RegexOptions.Compiled);
+        private static readonly Regex r_tSym = new Regex(@"([a-zA-Z_\-][a-zA-Z_.0-9\-]*)", RegexOptions.Compiled);
         internal static object ParseTokenType(string c)
         {
-            bool scan(string input, string pattern, out Match match)
+            bool scan(Regex regex, string input, out Match match)
             {
-                match = Regex.Match(input, pattern);
+                match = regex.Match(input);
                 return match.Success;
             }
 
             Match m;
-            if (scan(c, @"""(.*?)""", out m))
+            if (scan(r_tString, c, out m))
             {
                 return m.Groups[1].Value;
             }
-            else if (scan(c, @"(\d+)\.(\d+)\.(\d+)", out m))
+            else if (scan(r_tDate, c, out m))
             {
                 var year = m.Groups[1].Value;
                 var month = m.Groups[2].Value;
                 var day = m.Groups[3].Value;
                 return new DateTime(int.Parse(year), int.Parse(month), int.Parse(day));
             }
-            else if (scan(c, @"(-?\d+\.\d+)", out m))
+            else if (scan(r_tDouble, c, out m))
             {
                 return double.Parse(m.Groups[1].Value);
             }
-            else if (scan(c, @"\b(yes|no)\b", out m))
+            else if (scan(r_tBool, c, out m))
             {
                 return m.Groups[1].Value == "yes";
             }
-            else if (scan(c, @"(-?\d+)", out m))
+            else if (scan(r_tInt, c, out m))
             {
                 return int.Parse(m.Groups[1].Value);
             }
             //Some extra types:
             // few-many-none
             // unchecked
-            else if (scan(c, @"[a-zA-Z_\-][a-zA-Z_.0-9\-]*", out _))
+            else if (scan(r_tSym, c, out _))
             {
-                return c;
+                return m.Groups[1].Value;
             }
             else
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Unrecognized token type");
             }
         }
 
