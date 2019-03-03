@@ -1,8 +1,7 @@
-﻿using System;
+﻿//adapted from the example in https://devblogs.microsoft.com/dotnet/announcing-net-core-3-preview-2/
+using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace LibCK2.Parsing
 {
