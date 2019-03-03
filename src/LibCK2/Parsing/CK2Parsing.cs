@@ -80,46 +80,40 @@ namespace LibCK2.Parsing
 
         private static readonly Regex r_tString = new Regex(@"""(.*?)""", RegexOptions.Compiled);
         private static readonly Regex r_tDate = new Regex(@"(\d+)\.(\d+)\.(\d+)", RegexOptions.Compiled);
-        private static readonly Regex r_tDouble = new Regex(@"(-?\d+\.\d+)", RegexOptions.Compiled);
+        private static readonly Regex r_tFloat = new Regex(@"(-?\d+\.\d+)", RegexOptions.Compiled);
         private static readonly Regex r_tBool = new Regex(@"\b(yes|no)\b", RegexOptions.Compiled);
         private static readonly Regex r_tInt = new Regex(@"(-?\d+)", RegexOptions.Compiled);
         private static readonly Regex r_tSym = new Regex(@"([a-zA-Z_\-][a-zA-Z_.0-9\-]*)", RegexOptions.Compiled);
         internal static object ParseTokenType(string c)
         {
-            bool scan(Regex regex, string input, out Match match)
-            {
-                match = regex.Match(input);
-                return match.Success;
-            }
-
             Match m;
-            if (scan(r_tString, c, out m))
+            if ((m = r_tString.Match(c)).Success)
             {
                 return m.Groups[1].Value;
             }
-            else if (scan(r_tDate, c, out m))
+            else if ((m = r_tDate.Match(c)).Success)
             {
                 var year = m.Groups[1].Value;
                 var month = m.Groups[2].Value;
                 var day = m.Groups[3].Value;
                 return new DateTime(int.Parse(year), int.Parse(month), int.Parse(day));
             }
-            else if (scan(r_tDouble, c, out m))
+            else if ((m = r_tFloat.Match(c)).Success)
             {
-                return double.Parse(m.Groups[1].Value);
+                return float.Parse(m.Groups[1].Value);
             }
-            else if (scan(r_tBool, c, out m))
+            else if ((m = r_tBool.Match(c)).Success)
             {
                 return m.Groups[1].Value == "yes";
             }
-            else if (scan(r_tInt, c, out m))
+            else if ((m = r_tInt.Match(c)).Success)
             {
                 return int.Parse(m.Groups[1].Value);
             }
             //Some extra types:
             // few-many-none
             // unchecked
-            else if (scan(r_tSym, c, out _))
+            else if ((m = r_tSym.Match(c)).Success)
             {
                 return m.Groups[1].Value;
             }
@@ -146,8 +140,8 @@ namespace LibCK2.Parsing
                         case int n:
                             in_json.WriteNumberValue(n);
                             break;
-                        case float f:
-                            in_json.WriteNumberValue(f);
+                        case float n:
+                            in_json.WriteNumberValue(n);
                             break;
                         case bool b:
                             in_json.WriteBooleanValue(b);
@@ -169,8 +163,8 @@ namespace LibCK2.Parsing
                     case int n:
                         in_json.WriteNumber(key, n);
                         break;
-                    case float f:
-                        in_json.WriteNumber(key, f);
+                    case float n:
+                        in_json.WriteNumber(key, n);
                         break;
                     case bool b:
                         in_json.WriteBoolean(key, b);
