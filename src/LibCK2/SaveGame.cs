@@ -39,10 +39,10 @@ namespace LibCK2
     /// </summary>
     public class SaveGame
     {
-        public static Encoding SaveGameEncoding { get; } = CodePagesEncodingProvider.Instance.GetEncoding(1252);
-
         internal const string SavePathSuffix = @"Paradox Interactive\Crusader Kings II\save games";
         internal const string CK2Header = "CK2txt";
+
+        public static Encoding SaveGameEncoding { get; } = CodePagesEncodingProvider.Instance.GetEncoding(1252);
 
         public static string SaveGameLocation
         {
@@ -69,7 +69,7 @@ namespace LibCK2
                 CK2Parsing.TokensToJson(await parsedTokens, writer);
 
                 ms.Seek(0, SeekOrigin.Begin);
-                return new SaveGame(JsonDocument.Parse(ms));
+                return new SaveGame(await JsonDocument.ParseAsync(ms));
             }
         }
     }
