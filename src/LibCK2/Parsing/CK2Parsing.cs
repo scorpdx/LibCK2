@@ -25,58 +25,23 @@
     SOFTWARE.
 */
 
+using LibCK2.Game;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using TokenTypes = LibCK2.Parsing.Scanner.TokenTypes;
 using static LibCK2.SaveGame;
 
 namespace LibCK2.Parsing
 {
     internal static class CK2Parsing
     {
-        public enum TokenTypes
-        {
-            Value,
-            Equal,
-            Start,
-            End
-        }
-
-        internal static async Task<List<(string token, TokenTypes stoppedBy)>> ParseTokensAsync(Stream stream)
-        {
-            var tokens = new List<(string token, TokenTypes stoppedBy)>();
-
-            var scanner = new Scanner(new AsyncStreamPipe(stream).Input, SaveGameEncoding);
-            var stopBytes = SaveGameEncoding.GetBytes("\r\n\t{}=");
-
-            await foreach (var (token, stoppedBy) in scanner.ReadTokensAsync(stopBytes))
-            {
-                switch ((char)stoppedBy)
-                {
-                    case '{':
-                        tokens.Add((token, TokenTypes.Start));
-                        break;
-                    case '}':
-                        tokens.Add((token, TokenTypes.End));
-                        break;
-                    case '=':
-                        tokens.Add((token, TokenTypes.Equal));
-                        break;
-                    case '\r':
-                    case '\n':
-                    case '\t':
-                    default:
-                        tokens.Add((token, TokenTypes.Value));
-                        break;
-                }
-            }
-
-            return tokens;
-        }
+        //var scanner = new Scanner(new AsyncStreamPipe(stream, new System.IO.Pipelines.PipeOptions(pauseWriterThreshold: 1024 * 1024)).Input, SaveGameEncoding);
 
         private static readonly Regex r_tString = new Regex(@"""(.*?)""", RegexOptions.Compiled);
         private static readonly Regex r_tDate = new Regex(@"(\d+)\.(\d+)\.(\d+)", RegexOptions.Compiled);
@@ -93,10 +58,7 @@ namespace LibCK2.Parsing
             }
             else if ((m = r_tDate.Match(c)).Success)
             {
-                var year = m.Groups[1].Value;
-                var month = m.Groups[2].Value;
-                var day = m.Groups[3].Value;
-                return new DateTime(int.Parse(year), int.Parse(month), int.Parse(day));
+                return GameDate.Parse(m);
             }
             else if ((m = r_tFloat.Match(c)).Success)
             {
@@ -123,6 +85,101 @@ namespace LibCK2.Parsing
             }
         }
 
+        internal static async IAsyncEnumerable<(string key, object value)> TokensToTypesAsync(IAsyncEnumerable<(string token, TokenTypes stoppedBy)> tokens)
+        {
+            await using var tokenIterator = tokens.GetAsyncEnumerator();
+            (string token, TokenTypes stoppedBy) prev = default;
+            while (await tokenIterator.MoveNextAsync())
+            {
+                (string token, TokenTypes stoppedBy) = tokenIterator.Current;
+                //System.Diagnostics.Debug.Assert((prev.token != null && stoppedBy != TokenTypes.Equal) ? prev.stoppedBy == TokenTypes.Equal : true);
+                switch (stoppedBy)
+                {
+                    case TokenTypes.Value when token == CK2Header:
+                    case TokenTypes.Open:
+                        var ll = new List<(string token, TokenTypes stoppedBy)>();
+                        int depth = 1;
+                        while (depth > 0 && await tokenIterator.MoveNextAsync())
+                        {
+                            switch (tokenIterator.Current.stoppedBy)
+                            {
+                                case TokenTypes.Open: depth++; break;
+                                case TokenTypes.Close: depth--; break;
+                            }
+                            ll.Add(tokenIterator.Current);
+                        }
+                        yield return (token == CK2Header ? token : prev.token, ll);
+                        //{
+                        //    //var prev = parsedTokens[i - 1];
+                        //    var next = parsedTokens[i + 1];
+                        //    switch (next.stoppedBy)
+                        //    {
+                        //        case TokenTypes.Value:
+                        //        case TokenTypes.End:
+                        //            json.WriteStartArray(prev.token);
+                        //            subitems.Push(false); //array
+                        //            break;
+                        //        default:
+                        //            json.WriteStartObject(prev.token);
+                        //            subitems.Push(true); //object
+                        //            break;
+                        //    }
+                        //}
+                        break;
+                    case TokenTypes.Close:
+                        //throw new InvalidOperationException("no end");
+                        //yield return (2, prev.token, null);
+                        //{
+                        //    var isObject = subitems.Pop();
+                        //    if (isObject)
+                        //    {
+                        //        json.WriteEndObject();
+                        //    }
+                        //    else
+                        //    {
+                        //        if (!string.IsNullOrWhiteSpace(token))
+                        //        {
+                        //            WriteArray(ref json, token);
+                        //        }
+                        //        json.WriteEndArray();
+                        //    }
+                        //}
+                        break;
+                    //case TokenTypes.Equal:
+                    //    {
+                    //        var key = token;
+                    //        var next = parsedTokens[i + 1];
+                    //        if (next.stoppedBy == TokenTypes.Value)
+                    //        {
+                    //            WriteObject(ref json, key, next.token);
+                    //            i++;
+                    //        }
+                    //    }
+                    //    break;
+                    case TokenTypes.Equal: break;
+                    //case TokenTypes.Value when string.IsNullOrEmpty(token): break;
+                    case TokenTypes.Value:
+                        yield return (prev.token, ParseTokenType(token));
+                        break;
+                    default:
+                        //    if (string.IsNullOrWhiteSpace(token))
+                        //    {
+                        //        //
+                        //    }
+                        //    else if (subitems.Peek() == false) //array
+                        //    {
+                        //        WriteArray(ref json, token);
+                        //    }
+                        //    else
+                        //    {
+                        throw new InvalidOperationException("Unexpected token type");
+                        //    }
+                        //    break;
+                }
+                prev = (token, stoppedBy);
+            }
+        }
+
         internal static void TokensToJson(IReadOnlyList<(string token, TokenTypes stoppedBy)> parsedTokens, IBufferWriter<byte> writer)
         {
             var json = new Utf8JsonWriter(writer);
@@ -146,8 +203,8 @@ namespace LibCK2.Parsing
                         case bool b:
                             in_json.WriteBooleanValue(b);
                             break;
-                        case DateTime d:
-                            in_json.WriteStringValue($"{d.Year}.{d.Month}.{d.Day}");
+                        case GameDate d:
+                            in_json.WriteStringValue(d.ToString());
                             break;
                     }
                 }
@@ -169,71 +226,73 @@ namespace LibCK2.Parsing
                     case bool b:
                         in_json.WriteBoolean(key, b);
                         break;
-                    case DateTime d:
-                        in_json.WriteString(key, $"{d.Year}.{d.Month}.{d.Day}");
+                    case GameDate d:
+                        in_json.WriteString(key, d.ToString());
                         break;
                 }
             }
 
             Stack<bool> subitems = new Stack<bool>();
+            if (parsedTokens[0].token == CK2Header)
+            {
+                json.WriteStartObject(CK2Header);
+                subitems.Push(true);
+                //fix i
+            }
+            else //throw new InvalidOperationException("Unknown header");
+            {
+                json.WriteStartObject("unknown");
+                subitems.Push(true);
+            }
+
             for (int i = 0; i < parsedTokens.Count; i++)
             {
+                var prev = i > 1 ? parsedTokens[i - 1] : default;
+                var next = i < parsedTokens.Count - 1 ? parsedTokens[i + 1] : default;
                 var (token, stoppedBy) = parsedTokens[i];
                 switch (stoppedBy)
                 {
-                    case TokenTypes.Equal:
+                    case TokenTypes.Comment when next.stoppedBy == TokenTypes.Value:
+                        json.WriteCommentValue(next.token);
+                        i++;
+                        break;
+                    case TokenTypes.Equal when next.stoppedBy == TokenTypes.Value:
+                        WriteObject(ref json, token, next.token);
+                        i++;
+                        break;
+                    case TokenTypes.Equal when next.stoppedBy == TokenTypes.Open:
+                        break;
+                    case TokenTypes.Open:
+                        switch (next.stoppedBy)
                         {
-                            var key = token;
-                            var next = parsedTokens[i + 1];
-                            if (next.stoppedBy == TokenTypes.Value)
-                            {
-                                WriteObject(ref json, key, next.token);
-                                i++;
-                            }
+                            case TokenTypes.Value:
+                            case TokenTypes.Close:
+                                json.WriteStartArray(prev.token);
+                                subitems.Push(false); //array
+                                break;
+                            default:
+                                json.WriteStartObject(prev.token);
+                                subitems.Push(true); //object
+                                break;
                         }
                         break;
-                    case TokenTypes.Start:
+                    case TokenTypes.Close:
+                        var isObject = subitems.Pop();
+                        if (isObject)
                         {
-                            var prev = parsedTokens[i - 1];
-                            var next = parsedTokens[i + 1];
-                            switch (next.stoppedBy)
-                            {
-                                case TokenTypes.Value:
-                                case TokenTypes.End:
-                                    json.WriteStartArray(prev.token);
-                                    subitems.Push(false); //array
-                                    break;
-                                default:
-                                    json.WriteStartObject(prev.token);
-                                    subitems.Push(true); //object
-                                    break;
-                            }
+                            json.WriteEndObject();
                         }
-                        break;
-                    case TokenTypes.End:
+                        else
                         {
-                            var isObject = subitems.Pop();
-                            if (isObject)
+                            if (!string.IsNullOrWhiteSpace(token))
                             {
-                                json.WriteEndObject();
+                                WriteArray(ref json, token);
                             }
-                            else
-                            {
-                                if (!string.IsNullOrWhiteSpace(token))
-                                {
-                                    WriteArray(ref json, token);
-                                }
-                                json.WriteEndArray();
-                            }
+                            json.WriteEndArray();
                         }
                         break;
                     default:
-                        if (i == 0 && token == CK2Header)
-                        {
-                            json.WriteStartObject(token);
-                            subitems.Push(true);
-                        }
-                        else if (string.IsNullOrWhiteSpace(token))
+                        if (string.IsNullOrWhiteSpace(token))
                         {
                             //
                         }
