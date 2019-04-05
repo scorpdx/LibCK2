@@ -8,13 +8,13 @@
     <Description>LibCK2 is a .NET Core library for viewing and manipulating Crusader Kings 2 game data and save games</Description>
     <PackageLicenseUrl>https://github.com/scorpdx/LibCK2/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/scorpdx/LibCK2</PackageProjectUrl>
-    <VersionPrefix>2.0</VersionPrefix>
-    <LangVersion>8.0</LangVersion>
+    <VersionPrefix>2.1</VersionPrefix>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="4.6.0-preview.19073.11" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.6.0-preview.19073.11" />
+    <PackageReference Include="System.IO.Pipelines" Version="4.5.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
   </ItemGroup>
 
 </Project>
