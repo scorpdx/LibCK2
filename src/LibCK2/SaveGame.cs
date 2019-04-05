@@ -22,14 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using LibCK2.Game;
 using LibCK2.Parsing;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace LibCK2
@@ -53,6 +53,51 @@ namespace LibCK2
             }
         }
 
+        private JsonElement CK2 => GameState.RootElement.GetProperty(CK2Header);
+
+        private string Get(string propertyName) => CK2.GetProperty(propertyName).GetString();
+
+        public string Version => Get("version");
+
+        public GameDate Date => GameDate.Parse(Get("date"));
+
+        //public (int Id, int Type) Player
+        //{
+        //    get
+        //    {
+        //        var player = CK2.GetProperty("player");
+        //        return (player.GetProperty("id").GetInt32(), player.GetProperty("type").GetInt32());
+        //    }
+        //}
+
+        //public string Ironman { get; }
+
+        //public int Seed { get; }
+
+        public long Count => CK2.GetProperty("count").GetInt64();
+
+        //public GamePlayerShield PlayerShield { get; }
+
+        public string PlayerRealm => Get("player_realm");
+
+        public string PlayerName => Get("player_name");
+
+        public int PlayerAge => CK2.GetProperty("player_age").GetInt32();
+
+        //public dynamic PlayerPortrait { get; }
+
+        //public bool IsZeusSave { get; }
+
+        //public RuleDictionary GameRules { get; }
+
+        //public int GameSpeed { get; }
+
+        //public int MapMode { get; }
+
+        //public int PlaythroughId { get; }
+
+        //public Md5 Checksum { get; }
+
         public JsonDocument GameState { get; }
 
         private SaveGame(JsonDocument gameState)
@@ -62,12 +107,15 @@ namespace LibCK2
 
         public static async Task<SaveGame> ParseAsync(Stream stream)
         {
-            var parsedTokens = CK2Parsing.ParseTokensAsync(stream);
+            var options = new System.IO.Pipelines.PipeOptions(pauseWriterThreshold: 1024 * 1024);
+            var scanner = new Scanner(new AsyncStreamPipe(stream, options).Input, SaveGameEncoding);
+            var tokens = await scanner.ReadTokensAsync().ToListAsync();
+
             using (var ms = new MemoryStream(0x1000)) //default buffer size - 4KiB
             {
                 using (var writer = new StreamBufferWriter(ms))
                 {
-                    CK2Parsing.TokensToJson(await parsedTokens, writer);
+                    CK2Parsing.TokensToJson(tokens, writer);
                 }
 
                 ms.Seek(0, SeekOrigin.Begin);

@@ -10,6 +10,17 @@ namespace LibCK2.Parsing
 {
     public sealed class Scanner
     {
+        public enum TokenTypes
+        {
+            None,
+
+            Value,
+            Equal,
+            Comment,
+            Open,
+            Close
+        }
+
         private readonly PipeReader _reader;
         private readonly Encoding _encoding;
 
@@ -37,23 +48,40 @@ namespace LibCK2.Parsing
             });
         }
 
-        public async IAsyncEnumerable<(string token, byte stoppedBy)> ReadTokensAsync(ReadOnlyMemory<byte> stopBytes)
+        public async IAsyncEnumerable<(string token, TokenTypes stoppedBy)> ReadTokensAsync()
         {
+            var stopBytes = SaveGame.SaveGameEncoding.GetBytes("\r\n\t{}=#");
             while (true)
             {
                 var result = await _reader.ReadAsync();
                 var buf = result.Buffer;
                 do
                 {
-                    var foundPos = buf.PositionOfAny(stopBytes.Span);
+                    var foundPos = buf.PositionOfAny(stopBytes);
                     if (!foundPos.HasValue) break;
 
                     var pos = foundPos.Value;
                     var tokenBuffer = buf.Slice(0, pos);
+
                     byte stoppedBy = buf.Slice(pos, 1).First.Span[0];
                     if (!tokenBuffer.IsEmpty || stoppedBy > 32)
                     {
-                        yield return (GetEncodedString(tokenBuffer), stoppedBy);
+                        TokenTypes type;
+                        switch(stoppedBy)
+                        {
+                            case (byte)'{': type = TokenTypes.Open; break;
+                            case (byte)'}': type = TokenTypes.Close; break;
+                            case (byte)'=': type = TokenTypes.Equal; break;
+                            case (byte)'#': type = TokenTypes.Comment; break;
+                            case (byte)'\r':
+                            case (byte)'\n':
+                            case (byte)'\t':
+                                type = TokenTypes.Value;
+                                break;
+                            default:
+                                throw new InvalidOperationException("Stopped by unexpected token");
+                        }
+                        yield return (GetEncodedString(tokenBuffer), type);
                     }
 
                     buf = buf.Slice(buf.GetPosition(1, pos));
@@ -62,7 +90,7 @@ namespace LibCK2.Parsing
                 _reader.AdvanceTo(buf.Start, buf.End);
                 if (result.IsCompleted)
                 {
-                    yield return (GetEncodedString(buf.Slice(0)), 0);
+                    yield return (GetEncodedString(buf.Slice(0)), TokenTypes.Value);
                     break;
                 }
             }

@@ -38,7 +38,7 @@ namespace LibCK2.Parsing
 
         internal static ArraySegment<byte> GetArray(this ReadOnlyMemory<byte> buffer)
         {
-            if (!MemoryMarshal.TryGetArray<byte>(buffer, out var segment))
+            if (!MemoryMarshal.TryGetArray(buffer, out var segment))
                 throw new InvalidOperationException("MemoryMarshal.TryGetArray<byte> could not provide an array");
 
             return segment;
