@@ -237,7 +237,6 @@ namespace LibCK2.Parsing
             {
                 json.WriteStartObject(CK2Header);
                 subitems.Push(true);
-                //fix i
             }
             else //throw new InvalidOperationException("Unknown header");
             {
@@ -245,7 +244,7 @@ namespace LibCK2.Parsing
                 subitems.Push(true);
             }
 
-            for (int i = 0; i < parsedTokens.Count; i++)
+            for (int i = 1; i < parsedTokens.Count; i++)
             {
                 var prev = i > 1 ? parsedTokens[i - 1] : default;
                 var next = i < parsedTokens.Count - 1 ? parsedTokens[i + 1] : default;
