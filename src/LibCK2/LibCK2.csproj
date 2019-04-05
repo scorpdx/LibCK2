@@ -13,6 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hime.Redist" Version="3.4.0" />
+    <PackageReference Include="System.Interactive" Version="4.0.0-preview.1.build.745" />
     <PackageReference Include="System.IO.Pipelines" Version="4.6.0-preview.19073.11" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.6.0-preview.19073.11" />
   </ItemGroup>
