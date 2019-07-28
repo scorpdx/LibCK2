@@ -305,7 +305,7 @@ namespace LibCK2.Parsing
                 throw new InvalidOperationException("Parse finished with incomplete subitems");
 
             json.WriteEndObject();
-            json.Flush(isFinalBlock: true);
+            json.Flush();
         }
 
     }
