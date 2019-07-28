@@ -6,9 +6,9 @@ variables:
 
 steps:
 - task: DotNetCoreInstaller@0
-  displayName: 'Install .NET Core SDK 3.0.100-preview-010184'
+  displayName: 'Install .NET Core SDK 3.0.100-preview7-012821'
   inputs:
-    version: 3.0.100-preview-010184
+    version: 3.0.100-preview7-012821
 - script: |
     dotnet build   src/LibCK2 --configuration $(buildConfiguration)
     dotnet pack    src/LibCK2 --configuration $(buildConfiguration) --no-build --output $BUILD_ARTIFACTSTAGINGDIRECTORY/package --version-suffix 'CI-$(Build.BuildNumber)'
