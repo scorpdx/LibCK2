@@ -50,7 +50,7 @@ namespace LibCK2.Parsing
 
         public async IAsyncEnumerable<(string token, TokenTypes stoppedBy)> ReadTokensAsync()
         {
-            var stopBytes = SaveGame.SaveGameEncoding.GetBytes("\r\n\t{}=#");
+            var stopBytes = SaveGame.SaveGameEncoding.GetBytes("\r\n\t\" {}=#");
             while (true)
             {
                 var result = await _reader.ReadAsync();
@@ -61,9 +61,20 @@ namespace LibCK2.Parsing
                     if (!foundPos.HasValue) break;
 
                     var pos = foundPos.Value;
-                    var tokenBuffer = buf.Slice(0, pos);
-
                     byte stoppedBy = buf.Slice(pos, 1).First.Span[0];
+
+                    if (stoppedBy == (byte)'"')
+                    {
+                        var quotePos = buf.Slice(1).PositionOf((byte)'"');
+                        if (!quotePos.HasValue) break;
+                        foundPos = buf.Slice(buf.GetPosition(1, quotePos.Value)).PositionOfAny(stopBytes);
+                        if (!foundPos.HasValue) break;
+
+                        pos = foundPos.Value;
+                        stoppedBy = buf.Slice(pos, 1).First.Span[0];
+                    }
+
+                    var tokenBuffer = buf.Slice(0, pos);
                     if (!tokenBuffer.IsEmpty || stoppedBy > 32)
                     {
                         TokenTypes type;
@@ -76,6 +87,7 @@ namespace LibCK2.Parsing
                             case (byte)'\r':
                             case (byte)'\n':
                             case (byte)'\t':
+                            case (byte)' ':
                                 type = TokenTypes.Value;
                                 break;
                             default:
